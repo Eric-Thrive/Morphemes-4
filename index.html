@@ -224,14 +224,14 @@
             const ROOT_COLOR = "bg-green-200 border-green-400";
             const SUFFIX_COLOR = "bg-pink-200 border-pink-400";
 
-            // The initial words when the page loads
+            // The initial words when the page loads (fallback if no data in URL)
             const initialAvailableData = {
                 prefixes: ["un", "re", "pre", "dis", "mis", "de", "anti", "co"],
                 roots: parseRootsData(["port", "vis:vid", "graph", "rupt", "dict", "aud", "bene", "mal", "create", "fuse"]),
                 suffixes: ["able", "ment", "tion", "er", "est", "fy", "ize", "ous", "ion"]
             };
 
-            let availableData = JSON.parse(JSON.stringify(initialAvailableData));
+            let availableData = {}; // This will be populated from URL or initialAvailableData
             let combinedTilesData = [];
             let draggedTile = null;
             let touchDraggedTile = null;
@@ -800,8 +800,10 @@
             // Share Link Button Logic
             if (shareLinkButton) {
                 shareLinkButton.addEventListener('click', () => {
+                    // Encode the current availableData into a URL parameter
+                    const encodedData = btoa(JSON.stringify(availableData));
                     const currentUrl = window.location.origin + window.location.pathname;
-                    const shareUrl = currentUrl + '?shared=true';
+                    const shareUrl = `${currentUrl}?shared=true&data=${encodedData}`;
 
                     const tempInput = document.createElement('textarea');
                     tempInput.value = shareUrl;
@@ -842,6 +844,31 @@
 
             // --- INITIALIZATION ---
             const urlParams = new URLSearchParams(window.location.search);
+            const sharedDataParam = urlParams.get('data');
+
+            if (sharedDataParam) {
+                try {
+                    const decodedData = JSON.parse(atob(sharedDataParam));
+                    // Basic validation to ensure the structure is as expected
+                    if (decodedData.prefixes && decodedData.roots && decodedData.suffixes) {
+                        availableData = decodedData;
+                        console.log("Loaded word lists from URL data parameter.");
+                        // Ensure roots are parsed correctly if they contain "vis:vid" format
+                        availableData.roots = parseRootsData(decodedData.roots);
+                    } else {
+                        console.warn("Invalid data structure in URL parameter. Falling back to initial data.");
+                        availableData = JSON.parse(JSON.stringify(initialAvailableData));
+                    }
+                } catch (e) {
+                    console.error("Error parsing data from URL parameter. Falling back to initial data.", e);
+                    availableData = JSON.parse(JSON.stringify(initialAvailableData));
+                }
+            } else {
+                availableData = JSON.parse(JSON.stringify(initialAvailableData));
+                console.log("No data parameter found in URL. Using initial word lists.");
+            }
+
+
             if (urlParams.get('shared') === 'true') {
                 if (uploadSectionsContainer) {
                     uploadSectionsContainer.style.display = 'none';
