@@ -217,6 +217,8 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            console.log("DOM Content Loaded. Script starting."); // Diagnostic log
+
             // --- DATA & CONSTANTS ---
             const PREFIX_COLOR = "bg-blue-200 border-blue-400";
             const ROOT_COLOR = "bg-green-200 border-green-400";
@@ -225,8 +227,8 @@
             // The initial words when the page loads
             const initialAvailableData = {
                 prefixes: ["un", "re", "pre", "dis", "mis", "de", "anti", "co"],
-                roots: parseRootsData(["port", "vis:vid", "graph", "rupt", "dict", "aud", "bene", "mal", "create", "fuse"]), // Added create, fuse for e-dropping example
-                suffixes: ["able", "ment", "tion", "er", "est", "fy", "ize", "ous", "ion"] // Added ion for e-dropping example
+                roots: parseRootsData(["port", "vis:vid", "graph", "rupt", "dict", "aud", "bene", "mal", "create", "fuse"]),
+                suffixes: ["able", "ment", "tion", "er", "est", "fy", "ize", "ous", "ion"]
             };
 
             let availableData = JSON.parse(JSON.stringify(initialAvailableData));
@@ -239,20 +241,18 @@
             const prefixesContainer = document.getElementById('prefixes-container');
             const rootsContainer = document.getElementById('roots-container');
             const suffixesContainer = document.getElementById('suffixes-container');
-            let combinationArea = document.getElementById('combination-area'); // Use 'let' for re-assignment if needed
+            let combinationArea = document.getElementById('combination-area');
 
             // --- CRITICAL: Check if combinationArea exists before proceeding ---
             if (!combinationArea) {
                 console.error("FATAL ERROR: #combination-area element not found. Drag-and-drop and word combining will not work.");
-                return; // Stop script execution if critical element is missing
+                return;
             }
 
-            const placeholderText = combinationArea.querySelector('.placeholder-text');
             const combinedWordDisplay = document.getElementById('combined-word-display');
             const resetButton = document.getElementById('reset-button');
-            const shareLinkButton = document.getElementById('share-link-button'); // New button reference
+            const shareLinkButton = document.getElementById('share-link-button');
 
-            // New upload elements
             const uploadSectionsContainer = document.getElementById('upload-sections-container');
             const prefixesFileUpload = document.getElementById('prefixesFileUpload');
             const loadPrefixesButton = document.getElementById('loadPrefixesButton');
@@ -261,10 +261,8 @@
             const suffixesFileUpload = document.getElementById('suffixesFileUpload');
             const loadSuffixesButton = document.getElementById('loadSuffixesButton');
 
-            let insertionIndicator = document.createElement('div');
-            insertionIndicator.classList.add('insertion-indicator');
-            combinationArea.appendChild(insertionIndicator);
-            insertionIndicator.style.display = 'none'; // Hide by default
+            // Insertion indicator is managed by createOrUpdateInsertionIndicator
+            let insertionIndicator = null;
 
 
             // --- HELPER FUNCTIONS ---
@@ -299,14 +297,41 @@
                 return tile;
             }
 
-            function showInsertionIndicator(xCoord, yCoord) {
-                // Re-query combinationArea to ensure it's the current, valid element
-                const currentCombinationArea = document.getElementById('combination-area');
+            // Function to create or update the insertion indicator
+            function createOrUpdateInsertionIndicator() {
+                if (!combinationArea) {
+                    console.error("createOrUpdateInsertionIndicator: combinationArea is null. Cannot create indicator.");
+                    return null;
+                }
 
-                if (!insertionIndicator || (!draggedTile && !touchDraggedTile) || !currentCombinationArea) {
+                // Check if indicator already exists as a child of combinationArea
+                let existingIndicator = combinationArea.querySelector('.insertion-indicator');
+                if (existingIndicator) {
+                    insertionIndicator = existingIndicator; // Update global reference
+                } else {
+                    insertionIndicator = document.createElement('div');
+                    insertionIndicator.classList.add('insertion-indicator');
+                    combinationArea.appendChild(insertionIndicator);
+                }
+                insertionIndicator.style.display = 'none'; // Ensure it's hidden by default
+                return insertionIndicator;
+            }
+
+
+            function showInsertionIndicator(xCoord, yCoord) {
+                // Re-query combinationArea and ensure insertionIndicator is current
+                const currentCombinationArea = document.getElementById('combination-area');
+                const currentInsertionIndicator = currentCombinationArea ? currentCombinationArea.querySelector('.insertion-indicator') : null;
+                const currentPlaceholderText = currentCombinationArea ? currentCombinationArea.querySelector('.placeholder-text') : null;
+
+
+                if (!currentInsertionIndicator || (!draggedTile && !touchDraggedTile) || !currentCombinationArea) {
+                    console.log("showInsertionIndicator: Skipping. Missing elements or no drag in progress.");
+                    console.log("  currentInsertionIndicator:", currentInsertionIndicator, "draggedTile:", draggedTile, "touchDraggedTile:", touchDraggedTile, "currentCombinationArea:", currentCombinationArea);
                     return;
                 }
 
+                console.log("showInsertionIndicator: Attempting getBoundingClientRect on currentCombinationArea:", currentCombinationArea); // Diagnostic log
                 const containerRect = currentCombinationArea.getBoundingClientRect();
                 const containerX = containerRect.left;
 
@@ -315,7 +340,7 @@
                 let indicatorLeft;
                 if (afterElement === null) {
                     const lastTile = currentCombinationArea.lastElementChild;
-                    if (lastTile && lastTile !== placeholderText && lastTile !== insertionIndicator) {
+                    if (lastTile && lastTile !== currentPlaceholderText && lastTile !== currentInsertionIndicator) {
                         const lastTileRect = lastTile.getBoundingClientRect();
                         indicatorLeft = lastTileRect.right - containerX + 2;
                     } else {
@@ -326,15 +351,17 @@
                     indicatorLeft = afterRect.left - containerX - 2;
                 }
 
-                indicatorLeft = Math.max(0, Math.min(indicatorLeft, containerRect.width - insertionIndicator.offsetWidth));
+                indicatorLeft = Math.max(0, Math.min(indicatorLeft, containerRect.width - currentInsertionIndicator.offsetWidth));
 
-                insertionIndicator.style.left = `${indicatorLeft}px`;
-                insertionIndicator.style.display = 'block';
+                currentInsertionIndicator.style.left = `${indicatorLeft}px`;
+                currentInsertionIndicator.style.display = 'block';
             }
 
             function hideInsertionIndicator() {
-                if (insertionIndicator) {
-                    insertionIndicator.style.display = 'none';
+                // Re-query insertionIndicator to ensure it's current
+                const currentInsertionIndicator = document.getElementById('combination-area')?.querySelector('.insertion-indicator');
+                if (currentInsertionIndicator) {
+                    currentInsertionIndicator.style.display = 'none';
                 }
             }
 
@@ -365,15 +392,23 @@
             }
 
             function renderCombinedTiles() {
-                combinationArea.innerHTML = '';
+                // combinationArea is guaranteed to exist here from initial check
+                combinationArea.innerHTML = ''; // This removes all children, including the indicator
+                
+                // Re-create/re-attach insertion indicator after clearing innerHTML
+                createOrUpdateInsertionIndicator();
+
+                // Re-query placeholderText here
+                const currentPlaceholderText = combinationArea.querySelector('.placeholder-text');
+
                 if (combinedTilesData.length === 0) {
-                    if (placeholderText) {
-                        placeholderText.style.display = 'block';
-                        combinationArea.appendChild(placeholderText);
+                    if (currentPlaceholderText) {
+                        currentPlaceholderText.style.display = 'block';
+                        combinationArea.appendChild(currentPlaceholderText);
                     }
                 } else {
-                    if (placeholderText) {
-                        placeholderText.style.display = 'none';
+                    if (currentPlaceholderText) {
+                        currentPlaceholderText.style.display = 'none';
                     }
                     combinedTilesData.forEach(data => {
                         const tile = createTileElement(data.text, data.type, data.color, data.id);
@@ -384,7 +419,6 @@
             }
 
             function updateCombinedWordDisplay() {
-                let currentCombinedParts = combinedTilesData.map(tile => tile.text);
                 let correctedWord = "";
 
                 // Apply basic morphological rules
@@ -402,12 +436,6 @@
                             part.endsWith('e') && "aeiou".includes(nextPart.charAt(0).toLowerCase())) {
                             correctedWord += part.slice(0, -1); // Remove the 'e'
                         }
-                        // Add more rules here if needed for other common morphological changes
-                        // else if (type === 'roots' && nextType === 'suffixes' && part.endsWith('t') && nextPart.startsWith('tion')) {
-                        //     // This would be for act + tion -> action, but is more complex and needs a lookup
-                        //     // For now, we'll just add the part as is.
-                        //     correctedWord += part;
-                        // }
                         else {
                             correctedWord += part;
                         }
@@ -532,9 +560,301 @@
             function getDragAfterElement(container, x) {
                 if (!container) return null;
 
+                // Re-query placeholderText and insertionIndicator here
+                const currentPlaceholderText = container.querySelector('.placeholder-text');
+                const currentInsertionIndicator = container.querySelector('.insertion-indicator');
+
                 const draggableElements = [...container.querySelectorAll('.tile:not(.dragging)')].filter(
-                    element => element !== placeholderText && element !== insertionIndicator
+                    element => element !== currentPlaceholderText && element !== currentInsertionIndicator
                 );
 
                 return draggableElements.reduce((closest, child) => {
-                    const 
+                    const box = child.getBoundingClientRect();
+                    const offset = x - box.left - (box.width / 2);
+
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset: offset, element: child };
+                    } else {
+                        return closest;
+                    }
+                }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+            }
+
+            // --- TOUCH DRAG AND DROP LOGIC (Mobile) ---
+            let initialTouchX, initialTouchY;
+
+            function handleTouchStart(e) {
+                if (e.touches.length !== 1) return;
+
+                touchDraggedTile = e.target;
+                if (!touchDraggedTile.classList.contains('tile')) {
+                    touchDraggedTile = touchDraggedTile.closest('.tile');
+                }
+                if (!touchDraggedTile) return;
+
+                e.preventDefault();
+
+                touchDraggedTile.classList.add('dragging');
+
+                initialTouchX = e.touches[0].clientX;
+                initialTouchY = e.touches[0].clientY;
+
+                touchDraggedTile.style.position = 'fixed';
+                touchDraggedTile.style.zIndex = '1000';
+                touchDraggedTile.style.left = `${initialTouchX - touchDraggedTile.offsetWidth / 2}px`;
+                touchDraggedTile.style.top = `${initialTouchY - touchDraggedTile.offsetHeight / 2}px`;
+
+                document.addEventListener('touchmove', handleTouchMove, { passive: false });
+                document.addEventListener('touchend', handleTouchEnd);
+            }
+
+            function handleTouchMove(e) {
+                if (!touchDraggedTile) return;
+                e.preventDefault();
+
+                const clientX = e.touches[0].clientX;
+                const clientY = e.touches[0].clientY;
+
+                touchDraggedTile.style.left = `${clientX - touchDraggedTile.offsetWidth / 2}px`;
+                touchDraggedTile.style.top = `${clientY - touchDraggedTile.offsetHeight / 2}px`;
+
+                // Temporarily hide the dragged tile to find the element underneath
+                touchDraggedTile.style.display = 'none';
+                const elementUnderTouch = document.elementFromPoint(clientX, clientY);
+                touchDraggedTile.style.display = ''; // Show it again
+
+                document.querySelectorAll('.source-container, .drop-zone').forEach(container => {
+                    container.classList.remove('drag-over');
+                });
+
+                let currentDropZone = null;
+                if (elementUnderTouch) {
+                    currentDropZone = elementUnderTouch.closest('.drop-zone') || elementUnderTouch.closest('.source-container');
+                }
+
+                const currentCombinationArea = document.getElementById('combination-area');
+
+                if (currentDropZone) {
+                    currentDropZone.classList.add('drag-over');
+                    if (currentCombinationArea && currentDropZone === currentCombinationArea) {
+                        showInsertionIndicator(clientX, clientY);
+                    } else {
+                        hideInsertionIndicator();
+                    }
+                } else {
+                    hideInsertionIndicator();
+                }
+            }
+
+            function handleTouchEnd(e) {
+                if (!touchDraggedTile) return;
+
+                document.removeEventListener('touchmove', handleTouchMove);
+                document.removeEventListener('touchend', handleTouchEnd);
+
+                const clientX = e.changedTouches[0].clientX;
+                const clientY = e.changedTouches[0].clientY;
+
+                // Temporarily hide the dragged tile to find the element underneath
+                touchDraggedTile.style.display = 'none';
+                const elementUnderTouch = document.elementFromPoint(clientX, clientY);
+                touchDraggedTile.style.display = ''; // Show it again
+
+                let targetContainer = null;
+                if (elementUnderTouch) {
+                    targetContainer = elementUnderTouch.closest('.drop-zone') || elementUnderTouch.closest('.source-container');
+                }
+
+                touchDraggedTile.style.position = '';
+                touchDraggedTile.style.zIndex = '';
+                touchDraggedTile.style.left = '';
+                touchDraggedTile.style.top = '';
+                touchDraggedTile.classList.remove('dragging');
+
+                hideInsertionIndicator();
+                document.querySelectorAll('.source-container, .drop-zone').forEach(container => {
+                    container.classList.remove('drag-over');
+                });
+
+                const currentCombinationArea = document.getElementById('combination-area');
+
+                if (targetContainer) {
+                    const originalContainer = touchDraggedTile.parentElement;
+                    const tileData = {
+                        id: touchDraggedTile.id,
+                        text: touchDraggedTile.dataset.text,
+                        type: touchDraggedTile.dataset.type,
+                        color: touchDraggedTile.dataset.color
+                    };
+
+                    if (currentCombinationArea && targetContainer === currentCombinationArea) {
+                        if (originalContainer !== currentCombinationArea) {
+                            const originalType = originalContainer.id.replace('-container', '');
+                            availableData[originalType] = availableData[originalType].filter(item => item !== tileData.text);
+                        } else {
+                            combinedTilesData = combinedTilesData.filter(tile => tile.id !== tileData.id);
+                        }
+
+                        const afterElement = getDragAfterElement(currentCombinationArea, clientX);
+                        if (afterElement === null) {
+                            combinedTilesData.push(tileData);
+                        } else {
+                            const index = combinedTilesData.findIndex(tile => tile.id === afterElement.id);
+                            if (index !== -1) {
+                                combinedTilesData.splice(index, 0, tileData);
+                            } else {
+                                combinedTilesData.push(tileData);
+                            }
+                        }
+                    }
+                    else if (targetContainer.classList.contains('source-container')) {
+                        const targetType = targetContainer.id.replace('-container', '');
+
+                        if (originalContainer === currentCombinationArea) {
+                            if (!availableData[targetType].includes(tileData.text)) {
+                                availableData[targetType].push(tileData.text);
+                                availableData[targetType].sort();
+                            }
+                            combinedTilesData = combinedTilesData.filter(tile => tile.id !== tileData.id);
+                        } else {
+                            touchDraggedTile = null;
+                            return;
+                        }
+                    }
+                }
+
+                touchDraggedTile = null;
+
+                renderAvailableTiles();
+                renderCombinedTiles();
+            }
+
+
+            // --- FILE UPLOAD LOGIC ---
+            function processFileUpload(fileInput, category) {
+                console.log(`Attempting to process file for ${category}.`); // Diagnostic log
+                const file = fileInput.files[0];
+
+                if (!file) {
+                    alert(`Please select a .txt file for ${category} using the 'Choose File' button, then click 'Load'.`);
+                    console.warn(`No file object found for ${category} when 'Load' was clicked.`);
+                    return;
+                }
+
+                console.log(`File selected: ${file.name} for ${category}. Reading...`); // Diagnostic log
+                const reader = new FileReader();
+
+                reader.onload = function(event) {
+                    const fileContent = event.target.result;
+                    const newWords = fileContent.split('\n')
+                                            .map(word => word.trim())
+                                            .filter(word => word.length > 0);
+
+                    if (category === 'roots') {
+                        availableData[category] = parseRootsData(newWords);
+                    } else {
+                        availableData[category] = newWords.sort();
+                    }
+
+                    combinedTilesData = []; // Clear combined tiles when new lists are loaded
+                    globalTileIdCounter = 0; // Reset ID counter for fresh start
+                    renderAvailableTiles();
+                    renderCombinedTiles();
+                    alert(`Successfully loaded ${newWords.length} new ${category}!`);
+                    fileInput.value = ''; // Clear the input field visually after successful upload
+                    console.log(`Successfully loaded ${newWords.length} words for ${category}.`); // Diagnostic log
+                };
+
+                reader.onerror = function() {
+                    console.error(`Error reading ${category} file:`, reader.error);
+                    alert(`Could not read the ${category} file. Please try again.`);
+                };
+
+                reader.readAsText(file);
+            }
+
+
+            // --- EVENT LISTENERS ---
+            // Attach drag/drop listeners to combinationArea (now guaranteed to exist)
+            combinationArea.addEventListener('dragover', handleDragOver);
+            combinationArea.addEventListener('dragleave', handleDragLeave);
+            combinationArea.addEventListener('drop', handleDrop);
+
+            // Attach to source containers
+            const sourceContainers = document.querySelectorAll('.source-container');
+            sourceContainers.forEach(zone => {
+                zone.addEventListener('dragover', handleDragOver);
+                zone.addEventListener('dragleave', handleDragLeave);
+                zone.addEventListener('drop', handleDrop);
+            });
+
+            resetButton.addEventListener('click', () => {
+                availableData = JSON.parse(JSON.stringify(initialAvailableData));
+                combinedTilesData = [];
+                globalTileIdCounter = 0;
+                renderAvailableTiles();
+                renderCombinedTiles();
+                console.log("Game reset to initial state."); // Diagnostic log
+            });
+
+            // Share Link Button Logic
+            if (shareLinkButton) {
+                shareLinkButton.addEventListener('click', () => {
+                    const currentUrl = window.location.origin + window.location.pathname;
+                    const shareUrl = currentUrl + '?shared=true';
+
+                    const tempInput = document.createElement('textarea');
+                    tempInput.value = shareUrl;
+                    document.body.appendChild(tempInput);
+                    tempInput.select();
+                    try {
+                        const successful = document.execCommand('copy');
+                        if (successful) {
+                            alert("Share link copied to clipboard:\n" + shareUrl);
+                            console.log("Share link copied:", shareUrl); // Diagnostic log
+                        } else {
+                            alert("Could not copy link to clipboard. Please copy it manually:\n" + shareUrl);
+                            console.warn("Failed to copy share link using execCommand."); // Diagnostic log
+                        }
+                    } catch (err) {
+                        console.error('Failed to copy share link: ', err);
+                        alert("Could not copy link to clipboard. Please copy it manually:\n" + shareUrl);
+                    } finally {
+                        document.body.removeChild(tempInput);
+                    }
+                });
+            }
+
+
+            loadPrefixesButton.addEventListener('click', () => {
+                console.log("Load Prefixes button clicked."); // Diagnostic log
+                processFileUpload(prefixesFileUpload, 'prefixes');
+            });
+            loadRootsButton.addEventListener('click', () => {
+                console.log("Load Roots button clicked."); // Diagnostic log
+                processFileUpload(rootsFileUpload, 'roots');
+            });
+            loadSuffixesButton.addEventListener('click', () => {
+                console.log("Load Suffixes button clicked."); // Diagnostic log
+                processFileUpload(suffixesFileUpload, 'suffixes');
+            });
+
+
+            // --- INITIALIZATION ---
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('shared') === 'true') {
+                if (uploadSectionsContainer) {
+                    uploadSectionsContainer.style.display = 'none';
+                    console.log("Upload sections hidden for shared link."); // Diagnostic log
+                }
+            }
+
+            // Initial creation of the insertion indicator
+            createOrUpdateInsertionIndicator();
+            renderAvailableTiles();
+            renderCombinedTiles();
+            console.log("Game initialized."); // Diagnostic log
+        });
+    </script>
+</body>
+</html>
