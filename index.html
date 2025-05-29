@@ -19,21 +19,23 @@
         }
         .tile {
             display: inline-block;
-            padding: 0.125rem 0.5rem;
-            margin: 0.125rem;
+            /* Optimized for iPad/Touch */
+            padding: 0.75rem 1rem; /* Increased padding for larger touch target */
+            margin: 0.25rem;       /* Slightly increased margin */
+            font-size: 1rem;      /* Increased font size for readability */
+
             border-radius: 0.375rem;
             border-width: 1px;
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            font-size: 0.75rem;
             font-weight: 500;
-            cursor: grab; /* Change cursor to indicate draggable */
+            cursor: grab;
             transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-            user-select: none; /* Prevent text selection during drag */
-            -webkit-user-select: none; /* Safari */
-            -moz-user-select: none; /* Firefox */
-            -ms-user-select: none; /* IE10+ */
-            touch-action: none; /* Prevent default touch actions like scrolling */
-            position: relative; /* Ensure z-index works */
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            touch-action: none;
+            position: relative;
         }
         .tile:hover {
             transform: scale(1.08);
@@ -42,7 +44,7 @@
             opacity: 0.5;
             box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2), 0 4px 6px -2px rgba(0,4,0,0.1);
             cursor: grabbing;
-            z-index: 1000; /* Ensure dragged tile is on top */
+            z-index: 1000;
         }
         .drop-zone {
             min-height: 120px;
@@ -56,16 +58,30 @@
             display: flex;
             flex-wrap: wrap;
             align-items: center;
-            position: relative; /* Needed for insertion indicator */
+            position: relative;
         }
         .drop-zone.drag-over {
-            background-color: #eff6ff; /* Light blue on drag over */
-            border-color: #60a5fa; /* Blue border on drag over */
+            background-color: #eff6ff;
+            border-color: #60a5fa;
         }
-        /* Style for source containers when a tile is dragged over them */
+        .source-container {
+            min-height: 120px; /* Ensure sufficient height for drop */
+            padding: 0.75rem;
+            border-width: 2px;
+            border-style: dashed; /* Changed to dashed for consistency */
+            border-color: #d1d5db; /* Default border color */
+            border-radius: 0.5rem;
+            background-color: #ffffff;
+            gap: 0.125rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start; /* Align items to top for better flow */
+            align-content: flex-start; /* Ensure content starts from top */
+            position: relative;
+        }
         .source-container.drag-over {
-            background-color: #dbeafe; /* Lighter blue for source areas */
-            border-color: #3b82f6; /* Blue border for source areas */
+            background-color: #dbeafe;
+            border-color: #3b82f6;
         }
         .card {
             border-radius: 0.75rem;
@@ -81,15 +97,14 @@
             text-align: center;
             font-size: 0.875rem;
         }
-        /* Insertion indicator for drag-and-drop */
         .insertion-indicator {
             position: absolute;
             width: 2px;
-            background-color: #3b82f6; /* Blue-500 */
-            height: 80%; /* Adjust as needed */
+            background-color: #3b82f6;
+            height: 80%;
             top: 10%;
-            pointer-events: none; /* Allow events to pass through */
-            animation: pulse 1s infinite alternate; /* Simple pulse animation */
+            pointer-events: none;
+            animation: pulse 1s infinite alternate;
         }
 
         @keyframes pulse {
@@ -108,21 +123,21 @@
                 <div class="card-content">
                     <h2 class="text-2xl font-semibold mb-4 text-blue-600">Prefixes</h2>
                     <div id="prefixes-container" class="flex flex-wrap gap-0.5 source-container">
-                    </div>
+                        </div>
                 </div>
             </div>
             <div class="card bg-white">
                 <div class="card-content">
                     <h2 class="text-2xl font-semibold mb-4 text-green-600">Root Words & Morphemes</h2>
                     <div id="roots-container" class="flex flex-wrap gap-0.5 source-container">
-                    </div>
+                        </div>
                 </div>
             </div>
             <div class="card bg-white">
                 <div class="card-content">
                     <h2 class="text-2xl font-semibold mb-4 text-pink-600">Suffixes</h2>
                     <div id="suffixes-container" class="flex flex-wrap gap-0.5 source-container">
-                    </div>
+                        </div>
                 </div>
             </div>
         </div>
@@ -217,21 +232,20 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            console.log("DOM Content Loaded. Script starting."); // Diagnostic log
+            console.log("DOM Content Loaded. Script starting.");
 
             // --- DATA & CONSTANTS ---
             const PREFIX_COLOR = "bg-blue-200 border-blue-400";
             const ROOT_COLOR = "bg-green-200 border-green-400";
             const SUFFIX_COLOR = "bg-pink-200 border-pink-400";
 
-            // The initial words when the page loads (fallback if no data in URL)
             const initialAvailableData = {
                 prefixes: ["un", "re", "pre", "dis", "mis", "de", "anti", "co"],
                 roots: parseRootsData(["port", "vis:vid", "graph", "rupt", "dict", "aud", "bene", "mal", "create", "fuse"]),
                 suffixes: ["able", "ment", "tion", "er", "est", "fy", "ize", "ous", "ion"]
             };
 
-            let availableData = {}; // This will be populated from URL or initialAvailableData
+            let availableData = {};
             let combinedTilesData = [];
             let draggedTile = null;
             let touchDraggedTile = null;
@@ -243,7 +257,6 @@
             const suffixesContainer = document.getElementById('suffixes-container');
             let combinationArea = document.getElementById('combination-area');
 
-            // --- CRITICAL: Check if combinationArea exists before proceeding ---
             if (!combinationArea) {
                 console.error("FATAL ERROR: #combination-area element not found. Drag-and-drop and word combining will not work.");
                 return;
@@ -261,7 +274,6 @@
             const suffixesFileUpload = document.getElementById('suffixesFileUpload');
             const loadSuffixesButton = document.getElementById('loadSuffixesButton');
 
-            // Insertion indicator is managed by createOrUpdateInsertionIndicator
             let insertionIndicator = null;
 
 
@@ -297,41 +309,35 @@
                 return tile;
             }
 
-            // Function to create or update the insertion indicator
             function createOrUpdateInsertionIndicator() {
                 if (!combinationArea) {
                     console.error("createOrUpdateInsertionIndicator: combinationArea is null. Cannot create indicator.");
                     return null;
                 }
 
-                // Check if indicator already exists as a child of combinationArea
                 let existingIndicator = combinationArea.querySelector('.insertion-indicator');
                 if (existingIndicator) {
-                    insertionIndicator = existingIndicator; // Update global reference
+                    insertionIndicator = existingIndicator;
                 } else {
                     insertionIndicator = document.createElement('div');
                     insertionIndicator.classList.add('insertion-indicator');
                     combinationArea.appendChild(insertionIndicator);
                 }
-                insertionIndicator.style.display = 'none'; // Ensure it's hidden by default
+                insertionIndicator.style.display = 'none';
                 return insertionIndicator;
             }
 
 
             function showInsertionIndicator(xCoord, yCoord) {
-                // Re-query combinationArea and ensure insertionIndicator is current
                 const currentCombinationArea = document.getElementById('combination-area');
-                const currentInsertionIndicator = currentCombinationArea ? currentCombinationArea.querySelector('.insertion-indicator') : null;
+                const currentInsertionIndicator = createOrUpdateInsertionIndicator();
                 const currentPlaceholderText = currentCombinationArea ? currentCombinationArea.querySelector('.placeholder-text') : null;
 
 
                 if (!currentInsertionIndicator || (!draggedTile && !touchDraggedTile) || !currentCombinationArea) {
-                    console.log("showInsertionIndicator: Skipping. Missing elements or no drag in progress.");
-                    console.log("  currentInsertionIndicator:", currentInsertionIndicator, "draggedTile:", draggedTile, "touchDraggedTile:", touchDraggedTile, "currentCombinationArea:", currentCombinationArea);
                     return;
                 }
 
-                console.log("showInsertionIndicator: Attempting getBoundingClientRect on currentCombinationArea:", currentCombinationArea); // Diagnostic log
                 const containerRect = currentCombinationArea.getBoundingClientRect();
                 const containerX = containerRect.left;
 
@@ -358,7 +364,6 @@
             }
 
             function hideInsertionIndicator() {
-                // Re-query insertionIndicator to ensure it's current
                 const currentInsertionIndicator = document.getElementById('combination-area')?.querySelector('.insertion-indicator');
                 if (currentInsertionIndicator) {
                     currentInsertionIndicator.style.display = 'none';
@@ -368,51 +373,90 @@
 
             // --- RENDERING FUNCTIONS ---
             function renderAvailableTiles() {
-                prefixesContainer.innerHTML = '';
-                availableData.prefixes.forEach(text => {
-                    const tile = createTileElement(text, 'prefixes', PREFIX_COLOR);
-                    prefixesContainer.appendChild(tile);
-                });
-                if (availableData.prefixes.length === 0) prefixesContainer.innerHTML = '<p class="text-gray-500 italic text-xs w-full text-center">No prefixes available.</p>';
+                // Helper to manage placeholders in source containers
+                const manageSourcePlaceholder = (container, hasTiles) => {
+                    let placeholder = container.querySelector('.source-placeholder');
+                    if (!placeholder) {
+                        placeholder = document.createElement('div');
+                        placeholder.classList.add('source-placeholder');
+                        // Set specific text based on container
+                        if (container.id === 'prefixes-container') placeholder.textContent = 'No prefixes. Drop here to add.';
+                        else if (container.id === 'roots-container') placeholder.textContent = 'No roots. Drop here to add.';
+                        else if (container.id === 'suffixes-container') placeholder.textContent = 'No suffixes. Drop here to add.';
+                        container.appendChild(placeholder);
+                    }
+                    placeholder.style.display = hasTiles ? 'none' : 'block';
+                };
 
-                rootsContainer.innerHTML = '';
-                availableData.roots.forEach(text => {
-                    const tile = createTileElement(text, 'roots', ROOT_COLOR);
-                    rootsContainer.appendChild(tile);
+                [prefixesContainer, rootsContainer, suffixesContainer].forEach(container => {
+                    // Remove only actual tiles
+                    Array.from(container.children).filter(child => child.classList.contains('tile')).forEach(tile => container.removeChild(tile));
                 });
-                if (availableData.roots.length === 0) rootsContainer.innerHTML = '<p class="text-gray-500 italic text-xs w-full text-center">No root words available.</p>';
 
+                // Render prefixes
+                if (availableData.prefixes.length === 0) {
+                    manageSourcePlaceholder(prefixesContainer, false);
+                } else {
+                    availableData.prefixes.forEach(text => {
+                        const tile = createTileElement(text, 'prefixes', PREFIX_COLOR);
+                        prefixesContainer.appendChild(tile);
+                    });
+                    manageSourcePlaceholder(prefixesContainer, true);
+                }
 
-                suffixesContainer.innerHTML = '';
-                availableData.suffixes.forEach(text => {
-                    const tile = createTileElement(text, 'suffixes', SUFFIX_COLOR);
-                    suffixesContainer.appendChild(tile);
-                });
-                if (availableData.suffixes.length === 0) suffixesContainer.innerHTML = '<p class="text-gray-500 italic text-xs w-full text-center">No suffixes available.</p>';
+                // Render roots
+                if (availableData.roots.length === 0) {
+                    manageSourcePlaceholder(rootsContainer, false);
+                } else {
+                    availableData.roots.forEach(text => {
+                        const tile = createTileElement(text, 'roots', ROOT_COLOR);
+                        rootsContainer.appendChild(tile);
+                    });
+                    manageSourcePlaceholder(rootsContainer, true);
+                }
+
+                // Render suffixes
+                if (availableData.suffixes.length === 0) {
+                    manageSourcePlaceholder(suffixesContainer, false);
+                } else {
+                    availableData.suffixes.forEach(text => {
+                        const tile = createTileElement(text, 'suffixes', SUFFIX_COLOR);
+                        suffixesContainer.appendChild(tile);
+                    });
+                    manageSourcePlaceholder(suffixesContainer, true);
+                }
             }
 
+
             function renderCombinedTiles() {
-                // combinationArea is guaranteed to exist here from initial check
-                combinationArea.innerHTML = ''; // This removes all children, including the indicator
+                // Remove only the draggable tiles, preserve placeholder and indicator
+                const tilesInCombinationArea = Array.from(combinationArea.children).filter(
+                    child => child.classList.contains('tile')
+                );
+                tilesInCombinationArea.forEach(tile => combinationArea.removeChild(tile));
                 
-                // Re-create/re-attach insertion indicator after clearing innerHTML
+                let currentPlaceholderText = combinationArea.querySelector('.placeholder-text');
+                if (!currentPlaceholderText) {
+                    currentPlaceholderText = document.createElement('span');
+                    currentPlaceholderText.classList.add('placeholder-text');
+                    currentPlaceholderText.textContent = 'Drag tiles from above to build your word!';
+                    combinationArea.appendChild(currentPlaceholderText);
+                }
                 createOrUpdateInsertionIndicator();
 
-                // Re-query placeholderText here
-                const currentPlaceholderText = combinationArea.querySelector('.placeholder-text');
-
                 if (combinedTilesData.length === 0) {
-                    if (currentPlaceholderText) {
-                        currentPlaceholderText.style.display = 'block';
-                        combinationArea.appendChild(currentPlaceholderText);
-                    }
+                    currentPlaceholderText.style.display = 'block';
                 } else {
-                    if (currentPlaceholderText) {
-                        currentPlaceholderText.style.display = 'none';
-                    }
+                    currentPlaceholderText.style.display = 'none';
                     combinedTilesData.forEach(data => {
                         const tile = createTileElement(data.text, data.type, data.color, data.id);
-                        combinationArea.appendChild(tile);
+                        if (currentPlaceholderText && currentPlaceholderText.style.display === 'block') {
+                            combinationArea.insertBefore(tile, currentPlaceholderText);
+                        } else if (insertionIndicator && insertionIndicator.style.display === 'block') {
+                            combinationArea.insertBefore(tile, insertionIndicator);
+                        } else {
+                            combinationArea.appendChild(tile);
+                        }
                     });
                 }
                 updateCombinedWordDisplay();
@@ -421,7 +465,6 @@
             function updateCombinedWordDisplay() {
                 let correctedWord = "";
 
-                // Apply basic morphological rules
                 for (let i = 0; i < combinedTilesData.length; i++) {
                     let part = combinedTilesData[i].text;
                     let type = combinedTilesData[i].type;
@@ -430,17 +473,15 @@
                         let nextPart = combinedTilesData[i + 1].text;
                         let nextType = combinedTilesData[i + 1].type;
 
-                        // Rule 1: Drop 'e' from root if suffix starts with a vowel
-                        // Example: create + ion -> creation
                         if (type === 'roots' && nextType === 'suffixes' &&
                             part.endsWith('e') && "aeiou".includes(nextPart.charAt(0).toLowerCase())) {
-                            correctedWord += part.slice(0, -1); // Remove the 'e'
+                            correctedWord += part.slice(0, -1);
                         }
                         else {
                             correctedWord += part;
                         }
                     } else {
-                        correctedWord += part; // Add the last part as is
+                        correctedWord += part;
                     }
                 }
 
@@ -463,48 +504,70 @@
                     draggedTile = null;
                 }
                 hideInsertionIndicator();
+                // Clear drag-over from all containers
                 document.querySelectorAll('.source-container, .drop-zone').forEach(container => {
                     container.classList.remove('drag-over');
                 });
             }
 
-            function handleDragOver(e) {
-                e.preventDefault();
+            // Global dragover handler on body
+            function handleBodyDragOver(e) {
+                e.preventDefault(); // Crucial to allow dropping
                 e.dataTransfer.dropEffect = 'move';
 
-                const targetContainer = e.currentTarget;
-                const currentCombinationArea = document.getElementById('combination-area');
+                // Find the actual element under the cursor
+                let targetElement = document.elementFromPoint(e.clientX, e.clientY);
+                let currentDropZone = null;
 
+                // Traverse up the DOM to find a valid drop zone
+                while (targetElement && targetElement !== document.body) {
+                    if (targetElement.classList.contains('drop-zone') || targetElement.classList.contains('source-container')) {
+                        currentDropZone = targetElement;
+                        break;
+                    }
+                    targetElement = targetElement.parentElement;
+                }
+
+                // Remove drag-over from all containers first
                 document.querySelectorAll('.source-container, .drop-zone').forEach(container => {
                     container.classList.remove('drag-over');
                 });
-                targetContainer.classList.add('drag-over');
 
-                if (currentCombinationArea && targetContainer === currentCombinationArea) {
-                    showInsertionIndicator(e.clientX, e.clientY);
+                // Apply drag-over to the identified drop zone
+                if (currentDropZone) {
+                    currentDropZone.classList.add('drag-over');
+                    if (currentDropZone === combinationArea) {
+                        showInsertionIndicator(e.clientX, e.clientY);
+                    } else {
+                        hideInsertionIndicator();
+                    }
                 } else {
                     hideInsertionIndicator();
                 }
             }
 
-            function handleDragLeave(e) {
-                e.currentTarget.classList.remove('drag-over');
-                const currentCombinationArea = document.getElementById('combination-area');
-                if (currentCombinationArea && e.currentTarget === currentCombinationArea) {
-                    hideInsertionIndicator();
-                }
-            }
-
-            function handleDrop(e) {
+            // Global drop handler on body
+            function handleBodyDrop(e) {
                 e.preventDefault();
                 const droppedTileId = e.dataTransfer.getData('text/plain');
                 const droppedTileElement = document.getElementById(droppedTileId);
 
                 if (!droppedTileElement) return;
 
-                const originalContainer = droppedTileElement.parentElement;
-                const targetContainer = e.currentTarget;
+                // Find the actual element under the cursor at the time of drop
+                let targetElement = document.elementFromPoint(e.clientX, e.clientY);
+                let targetContainer = null;
 
+                // Traverse up the DOM to find a valid drop zone
+                while (targetElement && targetElement !== document.body) {
+                    if (targetElement.classList.contains('drop-zone') || targetElement.classList.contains('source-container')) {
+                        targetContainer = targetElement;
+                        break;
+                    }
+                    targetElement = targetElement.parentElement;
+                }
+
+                // Clear drag-over and hide indicator
                 document.querySelectorAll('.source-container, .drop-zone').forEach(container => {
                     container.classList.remove('drag-over');
                 });
@@ -519,37 +582,41 @@
 
                 const currentCombinationArea = document.getElementById('combination-area');
 
-                if (currentCombinationArea && targetContainer === currentCombinationArea) {
-                    if (originalContainer !== currentCombinationArea) {
-                        const originalType = originalContainer.id.replace('-container', '');
-                        availableData[originalType] = availableData[originalType].filter(item => item !== tileData.text);
-                    } else {
-                        combinedTilesData = combinedTilesData.filter(tile => tile.id !== tileData.id);
-                    }
-
-                    const afterElement = getDragAfterElement(currentCombinationArea, e.clientX);
-                    if (afterElement === null) {
-                        combinedTilesData.push(tileData);
-                    } else {
-                        const index = combinedTilesData.findIndex(tile => tile.id === afterElement.id);
-                        if (index !== -1) {
-                            combinedTilesData.splice(index, 0, tileData);
+                if (targetContainer) {
+                    if (currentCombinationArea && targetContainer === currentCombinationArea) {
+                        // Logic for dropping into combination area
+                        const originalContainer = droppedTileElement.parentElement;
+                        if (originalContainer !== currentCombinationArea) {
+                            const originalType = originalContainer.id.replace('-container', '');
+                            availableData[originalType] = availableData[originalType].filter(item => item !== tileData.text);
                         } else {
+                            combinedTilesData = combinedTilesData.filter(tile => tile.id !== tileData.id);
+                        }
+
+                        const afterElement = getDragAfterElement(currentCombinationArea, e.clientX);
+                        if (afterElement === null) {
                             combinedTilesData.push(tileData);
+                        } else {
+                            const index = combinedTilesData.findIndex(tile => tile.id === afterElement.id);
+                            if (index !== -1) {
+                                combinedTilesData.splice(index, 0, tileData);
+                            } else {
+                                combinedTilesData.push(tileData);
+                            }
                         }
                     }
-                }
-                else if (targetContainer.classList.contains('source-container')) {
-                    const targetType = targetContainer.id.replace('-container', '');
+                    else if (targetContainer.classList.contains('source-container')) {
+                        // Logic for dropping into source containers
+                        const targetType = targetContainer.id.replace('-container', '');
 
-                    if (originalContainer === currentCombinationArea) {
+                        // Remove from combinedTilesData if it was there
+                        combinedTilesData = combinedTilesData.filter(tile => tile.id !== tileData.id);
+
+                        // Add to the target source container's availableData if not already present
                         if (!availableData[targetType].includes(tileData.text)) {
                             availableData[targetType].push(tileData.text);
                             availableData[targetType].sort();
                         }
-                        combinedTilesData = combinedTilesData.filter(tile => tile.id !== tileData.id);
-                    } else {
-                        return;
                     }
                 }
 
@@ -557,10 +624,10 @@
                 renderCombinedTiles();
             }
 
+
             function getDragAfterElement(container, x) {
                 if (!container) return null;
 
-                // Re-query placeholderText and insertionIndicator here
                 const currentPlaceholderText = container.querySelector('.placeholder-text');
                 const currentInsertionIndicator = container.querySelector('.insertion-indicator');
 
@@ -623,13 +690,20 @@
                 const elementUnderTouch = document.elementFromPoint(clientX, clientY);
                 touchDraggedTile.style.display = ''; // Show it again
 
+                // Remove drag-over from all containers first
                 document.querySelectorAll('.source-container, .drop-zone').forEach(container => {
                     container.classList.remove('drag-over');
                 });
 
                 let currentDropZone = null;
-                if (elementUnderTouch) {
-                    currentDropZone = elementUnderTouch.closest('.drop-zone') || elementUnderTouch.closest('.source-container');
+                // Traverse up the DOM to find a valid drop zone
+                let targetElement = elementUnderTouch;
+                while (targetElement && targetElement !== document.body) {
+                    if (targetElement.classList.contains('drop-zone') || targetElement.classList.contains('source-container')) {
+                        currentDropZone = targetElement;
+                        break;
+                    }
+                    targetElement = targetElement.parentElement;
                 }
 
                 const currentCombinationArea = document.getElementById('combination-area');
@@ -661,8 +735,14 @@
                 touchDraggedTile.style.display = ''; // Show it again
 
                 let targetContainer = null;
-                if (elementUnderTouch) {
-                    targetContainer = elementUnderTouch.closest('.drop-zone') || elementUnderTouch.closest('.source-container');
+                // Traverse up the DOM to find a valid drop zone
+                let targetElement = elementUnderTouch;
+                while (targetElement && targetElement !== document.body) {
+                    if (targetElement.classList.contains('drop-zone') || targetElement.classList.contains('source-container')) {
+                        targetContainer = targetElement;
+                        break;
+                    }
+                    targetElement = targetElement.parentElement;
                 }
 
                 touchDraggedTile.style.position = '';
@@ -710,15 +790,11 @@
                     else if (targetContainer.classList.contains('source-container')) {
                         const targetType = targetContainer.id.replace('-container', '');
 
-                        if (originalContainer === currentCombinationArea) {
-                            if (!availableData[targetType].includes(tileData.text)) {
-                                availableData[targetType].push(tileData.text);
-                                availableData[targetType].sort();
-                            }
-                            combinedTilesData = combinedTilesData.filter(tile => tile.id !== tileData.id);
-                        } else {
-                            touchDraggedTile = null;
-                            return;
+                        combinedTilesData = combinedTilesData.filter(tile => tile.id !== tileData.id);
+
+                        if (!availableData[targetType].includes(tileData.text)) {
+                            availableData[targetType].push(tileData.text);
+                            availableData[targetType].sort();
                         }
                     }
                 }
@@ -732,7 +808,7 @@
 
             // --- FILE UPLOAD LOGIC ---
             function processFileUpload(fileInput, category) {
-                console.log(`Attempting to process file for ${category}.`); // Diagnostic log
+                console.log(`Attempting to process file for ${category}.`);
                 const file = fileInput.files[0];
 
                 if (!file) {
@@ -741,7 +817,7 @@
                     return;
                 }
 
-                console.log(`File selected: ${file.name} for ${category}. Reading...`); // Diagnostic log
+                console.log(`File selected: ${file.name} for ${category}. Reading...`);
                 const reader = new FileReader();
 
                 reader.onload = function(event) {
@@ -756,13 +832,13 @@
                         availableData[category] = newWords.sort();
                     }
 
-                    combinedTilesData = []; // Clear combined tiles when new lists are loaded
-                    globalTileIdCounter = 0; // Reset ID counter for fresh start
+                    combinedTilesData = [];
+                    globalTileIdCounter = 0;
                     renderAvailableTiles();
                     renderCombinedTiles();
                     alert(`Successfully loaded ${newWords.length} new ${category}!`);
-                    fileInput.value = ''; // Clear the input field visually after successful upload
-                    console.log(`Successfully loaded ${newWords.length} words for ${category}.`); // Diagnostic log
+                    fileInput.value = '';
+                    console.log(`Successfully loaded ${newWords.length} words for ${category}.`);
                 };
 
                 reader.onerror = function() {
@@ -775,18 +851,11 @@
 
 
             // --- EVENT LISTENERS ---
-            // Attach drag/drop listeners to combinationArea (now guaranteed to exist)
-            combinationArea.addEventListener('dragover', handleDragOver);
-            combinationArea.addEventListener('dragleave', handleDragLeave);
-            combinationArea.addEventListener('drop', handleDrop);
-
-            // Attach to source containers
-            const sourceContainers = document.querySelectorAll('.source-container');
-            sourceContainers.forEach(zone => {
-                zone.addEventListener('dragover', handleDragOver);
-                zone.addEventListener('dragleave', handleDragLeave);
-                zone.addEventListener('drop', handleDrop);
-            });
+            // Removed individual dragover/dragleave/drop from combinationArea and sourceContainers
+            // Handled globally on document.body now for better empty space dropping
+            document.body.addEventListener('dragover', handleBodyDragOver);
+            document.body.addEventListener('drop', handleBodyDrop);
+            // dragleave is tricky with global listeners, often better handled by specific elements on dragover
 
             resetButton.addEventListener('click', () => {
                 availableData = JSON.parse(JSON.stringify(initialAvailableData));
@@ -794,13 +863,11 @@
                 globalTileIdCounter = 0;
                 renderAvailableTiles();
                 renderCombinedTiles();
-                console.log("Game reset to initial state."); // Diagnostic log
+                console.log("Game reset to initial state.");
             });
 
-            // Share Link Button Logic
             if (shareLinkButton) {
                 shareLinkButton.addEventListener('click', () => {
-                    // Encode the current availableData into a URL parameter
                     const encodedData = btoa(JSON.stringify(availableData));
                     const currentUrl = window.location.origin + window.location.pathname;
                     const shareUrl = `${currentUrl}?shared=true&data=${encodedData}`;
@@ -813,10 +880,10 @@
                         const successful = document.execCommand('copy');
                         if (successful) {
                             alert("Share link copied to clipboard:\n" + shareUrl);
-                            console.log("Share link copied:", shareUrl); // Diagnostic log
+                            console.log("Share link copied:", shareUrl);
                         } else {
                             alert("Could not copy link to clipboard. Please copy it manually:\n" + shareUrl);
-                            console.warn("Failed to copy share link using execCommand."); // Diagnostic log
+                            console.warn("Failed to copy share link using execCommand.");
                         }
                     } catch (err) {
                         console.error('Failed to copy share link: ', err);
@@ -829,15 +896,15 @@
 
 
             loadPrefixesButton.addEventListener('click', () => {
-                console.log("Load Prefixes button clicked."); // Diagnostic log
+                console.log("Load Prefixes button clicked.");
                 processFileUpload(prefixesFileUpload, 'prefixes');
             });
             loadRootsButton.addEventListener('click', () => {
-                console.log("Load Roots button clicked."); // Diagnostic log
+                console.log("Load Roots button clicked.");
                 processFileUpload(rootsFileUpload, 'roots');
             });
             loadSuffixesButton.addEventListener('click', () => {
-                console.log("Load Suffixes button clicked."); // Diagnostic log
+                console.log("Load Suffixes button clicked.");
                 processFileUpload(suffixesFileUpload, 'suffixes');
             });
 
@@ -849,12 +916,12 @@
             if (sharedDataParam) {
                 try {
                     const decodedData = JSON.parse(atob(sharedDataParam));
-                    // Basic validation to ensure the structure is as expected
                     if (decodedData.prefixes && decodedData.roots && decodedData.suffixes) {
+                        decodedData.roots = parseRootsData(decodedData.roots);
+                        decodedData.prefixes = decodedData.prefixes.sort();
+                        decodedData.suffixes = decodedData.suffixes.sort();
                         availableData = decodedData;
                         console.log("Loaded word lists from URL data parameter.");
-                        // Ensure roots are parsed correctly if they contain "vis:vid" format
-                        availableData.roots = parseRootsData(decodedData.roots);
                     } else {
                         console.warn("Invalid data structure in URL parameter. Falling back to initial data.");
                         availableData = JSON.parse(JSON.stringify(initialAvailableData));
@@ -868,19 +935,17 @@
                 console.log("No data parameter found in URL. Using initial word lists.");
             }
 
-
             if (urlParams.get('shared') === 'true') {
                 if (uploadSectionsContainer) {
                     uploadSectionsContainer.style.display = 'none';
-                    console.log("Upload sections hidden for shared link."); // Diagnostic log
+                    console.log("Upload sections hidden for shared link.");
                 }
             }
 
-            // Initial creation of the insertion indicator
             createOrUpdateInsertionIndicator();
             renderAvailableTiles();
             renderCombinedTiles();
-            console.log("Game initialized."); // Diagnostic log
+            console.log("Game initialized.");
         });
     </script>
 </body>
