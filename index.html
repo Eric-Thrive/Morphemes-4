@@ -851,19 +851,17 @@
 
 
             // --- EVENT LISTENERS ---
-            // Removed individual dragover/dragleave/drop from combinationArea and sourceContainers
-            // Handled globally on document.body now for better empty space dropping
+            // Global dragover handler on body
             document.body.addEventListener('dragover', handleBodyDragOver);
             document.body.addEventListener('drop', handleBodyDrop);
-            // dragleave is tricky with global listeners, often better handled by specific elements on dragover
 
             resetButton.addEventListener('click', () => {
-                availableData = JSON.parse(JSON.stringify(initialAvailableData));
+                // Preserve availableData, only clear combined tiles
                 combinedTilesData = [];
-                globalTileIdCounter = 0;
-                renderAvailableTiles();
-                renderCombinedTiles();
-                console.log("Game reset to initial state.");
+                globalTileIdCounter = 0; // Reset ID counter for new tiles
+                renderAvailableTiles(); // Re-render source containers to ensure placeholders are correct
+                renderCombinedTiles(); // Re-render combined area
+                console.log("Combined word cleared. Lists preserved.");
             });
 
             if (shareLinkButton) {
